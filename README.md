@@ -186,5 +186,5 @@ service should be scalable.
 ## 1. Install AWS CLI
 ## 2. Install SAM CLI
 ###     sam build
-###     sam deploy --template-file ./src/cft/template.yaml --stake-name instalike-infta --s3-bucket deployment-s3-bucket --role-arn CFTAdminExecutionRoleARN --region us-east-1
+###     sam deploy --template-file ./src/cft/template.yaml --stack-name instalike-infta --s3-bucket deployment-s3-bucket --role-arn CFTAdminExecutionRoleARN --region us-east-1
 
