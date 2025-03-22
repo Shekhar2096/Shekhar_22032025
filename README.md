@@ -178,3 +178,13 @@ service should be scalable.
 5. Also set the provisioned reserved cuncurrenncy. Helps handle more traffic without throttling (but may increase cost).
 6. For filterimage endpoint as it can retrun multiple value in response we can use pagination.
 6. We can use cloudwatch to track issues early and respond before they impact users.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Deployment:
+
+## 1. Install AWS CLI
+## 2. Install SAM CLI
+###     sam build
+###     sam deploy --template-file ./src/cft/template.yaml --stake-name instalike-infta --s3-bucket deployment-s3-bucket --role-arn CFTAdminExecutionRoleARN --region us-east-1
+
