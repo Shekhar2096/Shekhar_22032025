@@ -1,6 +1,10 @@
 import json
 import boto3
 import os
+import logging 
+
+logger = logging.getLogger("Delete Image")
+logger.setLevel(logging.INFO)
 
 s3 = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
@@ -12,6 +16,7 @@ table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event, context):
     try:
+        logger.info(f'Lambda is running for following event: {event}')
         body = json.loads(event["body"])
         image_id = body.get("imageId")
 
@@ -39,7 +44,7 @@ def lambda_handler(event, context):
         # Delete image from S3
         s3.delete_object(Bucket=BUCKET_NAME, Key=key)
 
-        # Delete item from DynamoDB using full key
+        # Delete item from DynamoDB using imageid key
         table.delete_item(
             Key={
                 "imageId": image_id,
