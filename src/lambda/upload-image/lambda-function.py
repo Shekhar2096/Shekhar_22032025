@@ -4,6 +4,10 @@ import uuid
 import base64
 import os
 import timestamp
+import logging 
+
+logger = logging.getLogger("Upload Image")
+logger.setLevel(logging.INFO)
 
 s3 = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
@@ -21,6 +25,7 @@ def lambda_handler(event, context):
         in DynamoDB Table. In real world secnario it can be auto generated using some AI Capabilities.
 
         '''
+        logger.info(f'Lambda is running for following event: {event}')
         body = json.loads(event['body'])
         image_data = base64.b64decode(body['image_base64'])
         metadata = body.get('metadata', {})
