@@ -1,6 +1,10 @@
 import boto3
 import json
 import os
+import logging 
+
+logger = logging.getLogger("Download Image")
+logger.setLevel(logging.INFO)
 
 s3 = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
@@ -12,9 +16,10 @@ table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event, context):
     try:
+        logger.info(f'Lambda is running for following event: {event}')
         image_id = event.get("queryStringParameters", {}).get("imageId")
 
-        # For given image id in parameter , get that item from DynaoDB table
+        # For given image id in parameter , get item from DynaoDB table
         response = table.get_item(Key={"imageId": image_id})
 
         if "Item" not in response:
@@ -29,7 +34,7 @@ def lambda_handler(event, context):
         presigned_url = s3.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET_NAME, 'Key': key},
-            ExpiresIn=600  # 10 mins
+            ExpiresIn=600   
         )
 
         return {
