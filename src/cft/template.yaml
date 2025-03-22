@@ -1,0 +1,324 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Shekhar Assessment for Image Processing
+
+Parameters:
+    Env:
+        Description: Environment of AWS Account
+        Type: String
+        AllowedValues:
+            - dev
+            - prod
+            - stage
+        Default: 'dev'
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      BucketName: !Sub "instagram-like-${AWS::AccountId}-${Env}"
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration: # Public Access enable setting
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  ImagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ImagesMetaData
+      AttributeDefinitions:
+        - AttributeName: imageId
+          AttributeType: S #string data type
+        - AttributeName: userId
+          AttributeType: S  #string data type
+        - AttributeName: tag
+          AttributeType: S  #string data type
+        - AttributeName: location
+          AttributeType: S  #string data type
+        - AttributeName: s3_key
+          AttributeType: S  #string data type
+      KeySchema:
+        - AttributeName: imageId
+          KeyType: HASH # partition Key
+        - AttributeName: userId
+          KeyType: RANGE # Sort key
+      GlobalSecondaryIndexes: # Can be used in filter condition so creating GSI
+        - IndexName: ImagesByTagLocation
+          KeySchema:
+            - AttributeName: tag
+              KeyType: HASH
+            - AttributeName: location
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: LambdaExecutionRole
+      AssumeRolePolicyDocument:
+          AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            -
+              Effect: Allow
+              Principal:
+                Service:
+                  - 'lambda.amazonaws.com'
+              Action:
+                  - sts:AssumeRole
+          Path: '/'
+          Policies:
+          -
+            PolicyName: 'app-lambda'
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+              -
+                Effect: Allow
+                Action:
+                  - s3:* # giving full permission to lambda function for S3 in real time we restrict to minimun required permission
+                  - dynamodb:* # giving full permission to lambda function for dynamodb in real time we restrict to minimun required permission
+                Resource: "*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable Lambda network access
+      VpcId: vpc-xxxxxxxx  # Replace with actual VPC ID if using VPC
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  UploadImageLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'instalike-upload-image'
+      Timeout: 300
+      CodeUri: ./src/lambda/upload-image/
+      Runtime: python3.7
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: lambda_function.lambda_handler
+      Description: 'This is lambda function to list image from s3 bucket as per filter.
+      VpcConfig:
+          SubnetIds:
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+          SecurityGroupIds:
+              - !Ref LambdaSecurityGroup
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref S3Bucket
+          TABLE_NAME: !Ref ImagesTable
+      Layers:
+          - boto3 # Add boto3 latest version layer ara considering there is already a layer present in Account
+
+  filterimageLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'instalike-filter-image'
+      Timeout: 300
+      CodeUri: ./src/lambda/filter-image/
+      Runtime: python3.7
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: lambda_function.lambda_handler
+      Description: 'This is lambda function to download image.''
+      VpcConfig:
+          SubnetIds:
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+          SecurityGroupIds:
+              - !Ref LambdaSecurityGroup
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref S3Bucket
+          TABLE_NAME: !Ref ImagesTable
+      Layers:
+          - boto3 # Add boto3 latest version layer ara considering there is already a layer present in Account
+
+  downlaodImageLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'instalike-download-image'
+      Timeout: 300
+      CodeUri: ./src/lambda/download-image/
+      Runtime: python3.7
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: lambda_function.lambda_handler
+      Description: 'This is lambda function to delete image from s3 bucket.
+      VpcConfig:
+          SubnetIds:
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+          SecurityGroupIds:
+              - !Ref LambdaSecurityGroup
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref S3Bucket
+          TABLE_NAME: !Ref ImagesTable
+      Layers:
+          - boto3 # Add boto3 latest version layer ara considering there is already a layer present in Account
+  
+  deleteImageLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'instalike-delete-image'
+      Timeout: 300
+      CodeUri: ./src/lambda/delete-image/
+      Runtime: python3.7
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: lambda_function.lambda_handler
+      Description: 'This is lambda function to upload image to S3 Bucket'
+      VpcConfig:
+          SubnetIds:
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+              - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
+          SecurityGroupIds:
+              - !Ref LambdaSecurityGroup
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref S3Bucket
+          TABLE_NAME: !Ref ImagesTable
+      Layers:
+          - boto3 # Add boto3 latest version layer ara considering there is already a layer present in Account
+
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: InstalikeImageServiceApi
+
+  ApiGatewayResourceUpload:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: uploadImage
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayResourceFilter:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: filterImage
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayResourceDownload:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: downloadImage
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayResourceDelete:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: deleteImage
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayMethodUpload:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: PUT
+      ResourceId: !Ref ApiGatewayResourceUpload
+      RestApiId: !Ref ApiGatewayRestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: 
+          # lambda imtegration with UploadImageLambda
+
+  ApiGatewayMethodFilter:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId: !Ref ApiGatewayResourceFilter
+      RestApiId: !Ref ApiGatewayRestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: GET
+        Uri: 
+          # lambda imtegration with filterImageLambda
+
+  ApiGatewayMethodDownload:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId: !Ref ApiGatewayResourceDownload
+      RestApiId: !Ref ApiGatewayRestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: GET
+        Uri: 
+          # lambda imtegration with downloadImageLambda
+
+  ApiGatewayMethodDelete:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: PUT
+      ResourceId: !Ref ApiGatewayResourceDelete
+      RestApiId: !Ref ApiGatewayRestApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: 
+          # lambda imtegration with deleteImageLambda
+
+  UploadImageLambdaInvokePermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UploadImageLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  filterImageLambdaInvokePermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref filterImageLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  downloadImageLambdaInvokePermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref downloadImageLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  deleteImageLambdaInvokePermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref deleteImageLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  Deployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ApiGatewayMethodUpload
+      - ApiGatewayMethodFilter
+      - ApiGatewayMethodDownload
+      - ApiGatewayMethodDeelete
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
