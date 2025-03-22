@@ -2,6 +2,10 @@ import json
 import boto3
 import os
 from boto3.dynamodb.conditions import Attr
+import logging 
+
+logger = logging.getLogger("Filter Image")
+logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource("dynamodb")
 TABLE_NAME = os.environ["TABLE_NAME"]
@@ -9,10 +13,10 @@ table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event, context):
     try:
+        logger.info(f'Lambda is running for following event: {event}')
         location = event.get("queryStringParameters", {}).get("location")
         tag = event.get("queryStringParameters", {}).get("tag")
 
-        # Build filter expression
         filter_expr = None
 
         '''
