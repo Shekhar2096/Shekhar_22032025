@@ -25,7 +25,7 @@ service should be scalable.
 
 ## Approach:   
 
-# Create resouces using Cloudformation Template)
+# Create resources using Cloudformation Template
 
 # 1. Create S3 bucket using IaaC to store images uploaded by user
     Bucket:
@@ -37,7 +37,7 @@ service should be scalable.
     Table:
         Take care of Partition Key and Sort key during the time of table create. Also Create Secondary index as user can filter images based on location or tags. 
 
-# 3.  Lambda FUnctions of asked functionality.  
+# 3.  Lambda FUnctions for asked functionality.  
     1. Upload Imagge
         Considering image size is less than 10MB as API gateways has payload limit for 10 MB. 
 
@@ -53,7 +53,7 @@ service should be scalable.
 # 4. API Gateway:
     Create API Gateway using IaaC and create resources like 
         /uploadImage : Method POST
-        /listImages  : Method GET || Parameter: location and tag
+        /filterImages  : Method GET || Parameter: location and tag
         /downloadImage : Method GET || Parameter: imageId
         /deleteImage:  Method DELETE || Parameter: imageId
 
