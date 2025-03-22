@@ -117,7 +117,7 @@ Resources:
       Runtime: python3.7
       Role: !GetAtt LambdaExecutionRole.Arn
       Handler: lambda_function.lambda_handler
-      Description: 'This is lambda function to list image from s3 bucket as per filter.
+      Description: 'This is lambda function to list image from s3 bucket as per filter.'
       VpcConfig:
           SubnetIds:
               - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
@@ -140,7 +140,7 @@ Resources:
       Runtime: python3.7
       Role: !GetAtt LambdaExecutionRole.Arn
       Handler: lambda_function.lambda_handler
-      Description: 'This is lambda function to download image.''
+      Description: 'This is lambda function to download image.'
       VpcConfig:
           SubnetIds:
               - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
@@ -163,7 +163,7 @@ Resources:
       Runtime: python3.7
       Role: !GetAtt LambdaExecutionRole.Arn
       Handler: lambda_function.lambda_handler
-      Description: 'This is lambda function to delete image from s3 bucket.
+      Description: 'This is lambda function to delete image from s3 bucket.'
       VpcConfig:
           SubnetIds:
               - public-subnet-id1 # This needs to be updated as per the Account public SubnetId
@@ -319,6 +319,6 @@ Resources:
       - ApiGatewayMethodUpload
       - ApiGatewayMethodFilter
       - ApiGatewayMethodDownload
-      - ApiGatewayMethodDeelete
+      - ApiGatewayMethodDelete
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
