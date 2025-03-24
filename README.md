@@ -31,7 +31,7 @@ service should be scalable.
     Bucket:
         Unique Name
         Encrypted bucket(using Amazon Managed Key)
-        As user needs to upload images to bucket so make sure this bucket as Public access.
+        Enable Versioning
 
 # 2. Create DynamoDB table to store metadata of images uploaded by user.
     Table:
